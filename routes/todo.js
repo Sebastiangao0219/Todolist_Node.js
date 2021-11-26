@@ -43,6 +43,8 @@ router.post("/", async function (req, res, next) {
     title: req.body.title,
     content: req.body.content,
     author: req.payload.id,
+    complete: req.body.complete,
+    completedOn: req.body.completedOn
   });
 
   await todo
@@ -53,11 +55,42 @@ router.post("/", async function (req, res, next) {
         title: savedTodo.title,
         content: savedTodo.content,
         author: savedTodo.author,
+        complete: savedTodo.complete,
+        completedOn: savedTodo.completeOn
       });
     })
     .catch((error) => {
       return res.status(500).json({ error: error.message });
     });
 });
+
+router.delete('/:todoId', async function (req,res) {
+  const { id } = req.params;
+  
+  await Todo.findOneAndDelete({
+    _id: id, 
+    $or: [{author: req.user._id}, {profile: req.user.username}]
+    })
+    .exec((err, todo) => {
+      if(err)
+        return res.status(500).json({code: 500, message: 'There was an error deleting the todo', error: err})
+      res.status(200).json({code: 200, message: 'Todo deleted', deletedTodo: todo})
+    });
+})
+
+router.patch('/:todoId', async (req, res) => {
+  try {
+    const update = await domainModel.updateOne(
+      { _id: req.params.id },
+      { $set: { complete: !complete } }
+    );
+    res.json(update);
+  } catch (err) {
+    res.json({ message: err });
+  }
+});
+
+
+
 
 module.exports = router;
