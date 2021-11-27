@@ -22,6 +22,9 @@ router.use(function (req, res, next) {
   next();
 });
 
+function success(res, payload) {
+  return res.status(200).json(payload)
+}
 /* GET home page. */
 router.get("/", async function (req, res, next) {
   const todos = await Todo.find().where("author").equals(req.payload.id).exec();
@@ -44,7 +47,7 @@ router.post("/", async function (req, res, next) {
     content: req.body.content,
     author: req.payload.id,
     complete: req.body.complete,
-    completedOn: req.body.completedOn
+    completedOn: req.body.completedOn,
   });
 
   await todo
@@ -56,7 +59,7 @@ router.post("/", async function (req, res, next) {
         content: savedTodo.content,
         author: savedTodo.author,
         complete: savedTodo.complete,
-        completedOn: savedTodo.completeOn
+        completedOn: savedTodo.completeOn,
       });
     })
     .catch((error) => {
@@ -64,33 +67,24 @@ router.post("/", async function (req, res, next) {
     });
 });
 
-router.delete('/:todoId', async function (req,res) {
-  const { id } = req.params;
-  
-  await Todo.findOneAndDelete({
-    _id: id, 
-    $or: [{author: req.user._id}, {profile: req.user.username}]
-    })
-    .exec((err, todo) => {
-      if(err)
-        return res.status(500).json({code: 500, message: 'There was an error deleting the todo', error: err})
-      res.status(200).json({code: 200, message: 'Todo deleted', deletedTodo: todo})
-    });
-})
-
-router.patch('/:todoId', async (req, res) => {
+router.delete("/:todoId", async (req, res, next) => {
   try {
-    const update = await domainModel.updateOne(
-      { _id: req.params.id },
-      { $set: { complete: !complete } }
-    );
-    res.json(update);
-  } catch (err) {
-    res.json({ message: err });
+    await Todo.findByIdAndRemove(req.params.todoId);
+    return success(res, "Todo deleted!");
+  } catch (error) {
+    next({ status: 400, message: "Todo delete failed~!" });
   }
 });
 
+router.put('/:todoId', async (req,res) => {
+  const { todoId } = req.params;
+  const { complete, completedOn } = req.body;
 
-
+  await Todo.findOneAndUpdate( {_id: todoId}, {complete: complete, completedOn: completedOn} ).exec((error, todo) => {
+      if(error)
+        return res.status(500).json({code: 500, message: 'Error occured updating todo', error: error})
+      res.status(200).json(todo)
+    });
+})
 
 module.exports = router;

@@ -1,5 +1,4 @@
 const mongoose = require('mongoose');
-// const uri = "mongodb+srv://admin:$AGk7$Gx.vksc$t@cluster0.3zudr.mongodb.net/todoListDatabase?retryWrites=true&w=majority";
 const uri = process.env.DB_URI;
 function connect() {
     const options = { useNewUrlParser: true };
